@@ -1,0 +1,581 @@
+library(rethinking)
+library(data.table)
+###########################################################################
+######### MODEL VERIFICATION - Weinert Wolbachia estimate, full dataset####
+###########################################################################
+
+WeinertWolb2<-WeinertALL[WeinertALL$Bacterium=="Wolbachia",]
+WeinWolb<-WeinertWolb2[,c("Infected","Total","spp","Order")]
+WeinWolb<-dd10.trim[complete.cases(dd10.trim$Total),]
+
+m1<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=WeinWolb,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+
+plot(m1)#Check HMC chains
+
+precis(m1,prob=.95)
+postm1<-extract.samples(m1)
+a1<-mean(logistic(postm1$a)) #model intercept for aquatic
+a1.low<-quantile(logistic(postm1$a),0.025) #lower 95% CI
+a1.high<-quantile(logistic(postm1$a),0.975) #upper 95% CI
+theta1<-mean(postm1$theta) #model theta
+alpha1<-a1*theta1 #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta1<-(1-a1)*theta1 #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+list(c(1-pbeta(0.001,alpha1,beta1), #estimate of incidence in aquatic insects (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a1.low*theta1,(1-a1.low)*theta1), #lower 95%CI
+       1-pbeta(0.001,a1.high*theta1,(1-a1.high)*theta1))) #upper 95%CI
+
+
+###########################################################################
+######### MODEL VERIFICATION - Weinert Rickettsia estimates, full dataset##
+###########################################################################
+
+WeinertRick<-WeinertALL[WeinertALL$Bacterium=="Rickettsia",]
+WeinRick<-WeinertRick[,c("Infected","Total","spp","Order")]
+
+
+m1rick<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=WeinRick,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+
+plot(m1rick)#Check HMC chains
+
+precis(m1rick,prob=.95)
+postm1rick<-extract.samples(m1rick)
+a1rick<-mean(logistic(postm1rick$a)) #model intercept for aquatic
+a1rick.low<-quantile(logistic(postm1rick$a),0.025) #lower 95% CI
+a1rick.high<-quantile(logistic(postm1rick$a),0.975) #upper 95% CI
+theta1rick<-mean(postm1rick$theta) #model theta
+alpha1rick<-a1rick*theta1rick #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta1rick<-(1-a1rick)*theta1rick #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+list(c(1-pbeta(0.001,alpha1rick,beta1rick), #estimate of incidence in aquatic insects (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a1rick.low*theta1rick,(1-a1rick.low)*theta1rick), #lower 95%CI
+       1-pbeta(0.001,a1rick.high*theta1rick,(1-a1rick.high)*theta1rick))) #upper 95%CI
+
+
+###########################################################################
+######### MODEL VERIFICATION - Weinert Cardinium estimates, full dataset##
+###########################################################################
+
+WeinertCard<-WeinertALL[WeinertALL$Bacterium=="Cardinium",]
+WeinCard<-WeinertCard[,c("Infected","Total","spp","Order")]
+WeinCard<-dd10.trim[complete.cases(dd10.trim$Total),]
+
+m1Card<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=WeinCard,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+
+plot(m1Card)#Check HMC chains
+
+precis(m1Card,prob=.95)
+postm1Card<-extract.samples(m1Card)
+a1Card<-mean(logistic(postm1Card$a)) #model intercept for aquatic
+a1Card.low<-quantile(logistic(postm1Card$a),0.025) #lower 95% CI
+a1Card.high<-quantile(logistic(postm1Card$a),0.975) #upper 95% CI
+theta1Card<-mean(postm1Card$theta) #model theta
+alpha1Card<-a1Card*theta1Card #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta1Card<-(1-a1Card)*theta1Card #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+list(c(1-pbeta(0.001,alpha1Card,beta1Card), #estimate of incidence in aquatic insects (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a1Card.low*theta1Card,(1-a1Card.low)*theta1Card), #lower 95%CI
+       1-pbeta(0.001,a1Card.high*theta1Card,(1-a1Card.high)*theta1Card))) #upper 95%CI
+
+
+
+
+######################################################################################################
+#############Aquatic versus terrestrial insects - All samples#########################################
+######################################################################################################
+
+d2cull<-d2[,c("Total","Infected","ATcode")]
+d2.trim<-d2cull[complete.cases(d2cull$Total),]
+
+
+m3<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a+b*ATcode,
+    a~dnorm(0,3),
+    b~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d2.trim,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+
+plot(m3)#Check HMC chains
+
+precis(m3,prob=.95)
+postm3<-extract.samples(m3)
+a3.aq<-mean(logistic(postm3$a+postm3$b)) #model intercept for aquatic
+a3.aq.low<-quantile(logistic(postm3$a+postm3$b),0.025) #lower 95% CI
+a3.aq.high<-quantile(logistic(postm3$a+postm3$b),0.975) #upper 95% CI
+theta3<-mean(postm3$theta) #model theta
+alpha3.aq<-a3.aq*theta3 #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta3.aq<-(1-a3.aq)*theta3 #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+
+a3.ter<-mean(logistic(postm3$a+postm3$b*0))#model intercept for terrestrial
+a3.ter.low<-quantile(logistic(postm3$a+postm3$b*0),0.025) #lower 95%CI
+a3.ter.high<-quantile(logistic(postm3$a),0.975) #upper 95% CI
+alpha3.ter<-a3.ter*theta3 #shape parameter one, alpha, for terrestrial
+beta3.ter<-(1-a3.aq)*theta3 #shape paramter tow, beta, for terrestrial
+
+
+list(c(1-pbeta(0.001,alpha3.aq,beta3.aq), #estimate of incidence in aquatic insects (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a3.aq.low*theta3,(1-a3.aq.low)*theta3), #lower 95%CI
+       1-pbeta(0.001,a3.aq.high*theta3,(1-a3.aq.high)*theta3))) #upper 95%CI
+
+list(c(1-pbeta(0.001,alpha3.ter,beta3.ter),#estimate of incidence in terrestrial insects (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a3.ter.low*theta3,(1-a3.ter.low)*theta3),#lower 95%CI
+       1-pbeta(0.001,a3.ter.high*theta3,(1-a3.ter.high)*theta3)))#upper 95%CI
+
+
+######################################################################################################
+#############Aquatic versus terrestrial insects - All samples, but no mosquitoes##############################################################
+######################################################################################################
+#wolbcull<-wolbmergeculled
+#d2<-wolbcull[wolbcull$Class=="Insecta",]
+#d2$ATcode<-ifelse(d2$AT=="aquatic",1,0)
+d2_nom<-d2[d2$Family!="Culicidae",] #no mosquitoes
+d2cull_nom<-d2_nom[,c("Total","Infected","ATcode")]
+d2_nom.trim<-d2cull_nom[complete.cases(d2cull_nom$Total),]
+
+m3.1<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a+b*ATcode,
+    a~dnorm(0,3),
+    b~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d2_nom.trim,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m3.1)#Check HMC chains
+
+precis(m3.1,prob=.95)
+postm3.1<-extract.samples(m3.1)
+a3.1.aq<-mean(logistic(postm3.1$a+postm3.1$b)) #model intercept for aquatic
+a3.1.aq.low<-quantile(logistic(postm3.1$a+postm3.1$b),0.025)
+a3.1.aq.high<-quantile(logistic(postm3.1$a+postm3.1$b),0.975)
+theta3.1<-mean(postm3.1$theta) #model theta
+alpha3.1.aq<-a3.1.aq*theta3.1 #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta3.1.aq<-(1-a3.1.aq)*theta3.1 #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+
+a3.1.ter<-mean(logistic(postm3.1$a+postm3.1$b*0))
+a3.1.ter.low<-quantile(logistic(postm3.1$a+postm3.1$b*0),0.025)
+a3.1.ter.high<-quantile(logistic(postm3.1$a),0.975)
+alpha3.1.ter<-a3.1.ter*theta3.1
+beta3.1.ter<-(1-a3.1.aq)*theta3.1
+
+
+list(c(1-pbeta(0.001,alpha3.1.aq,beta3.1.aq), #estimate of incidence (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a3.1.aq.low*theta3.1,(1-a3.1.aq.low)*theta3.1), #95%CI
+       1-pbeta(0.001,a3.1.aq.high*theta3.1,(1-a3.1.aq.high)*theta3.1))) #95%CI
+
+list(c(1-pbeta(0.001,alpha3.1.ter,beta3.1.ter),
+       1-pbeta(0.001,a3.1.ter.low*theta3.1,(1-a3.1.ter.low)*theta3.1),
+       1-pbeta(0.001,a3.1.ter.high*theta3.1,(1-a3.1.ter.high)*theta3.1)))
+
+
+
+######################################################################
+########aquatic-terrestrial model with only max samples###############
+######create dataset with only the max #samples for each species######
+######################################################################
+library(data.table)
+d2<-as.data.table(d2)
+d2.max<-d2[d2[, .I[which.max(Total)], by=spp]$V1]
+d2.max<-as.data.frame(d2.max)
+d2.max<-d2.max[d2.max$Class=="Insecta",]
+d2.max$ATcode<-ifelse(d2.max$AT=="aquatic",1,0)
+d2maxcull<-d2.max[,c("Total","Infected","ATcode","Order")]
+d2max.trim<-d2maxcull[complete.cases(d2maxcull$Total),]
+
+m4<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a+b*ATcode,
+    a~dnorm(0,3),
+    b~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d2max.trim,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m4)
+
+precis(m4,prob=.95)
+postm4<-extract.samples(m4)
+a4.aq<-mean(logistic(postm4$a+postm4$b)) #model intercept for aquatic
+a4.aq.low<-quantile(logistic(postm4$a+postm4$b),0.025) #model intercept for aquatic
+a4.aq.high<-quantile(logistic(postm4$a+postm4$b),0.975) #model intercept for aquatic
+theta4<-mean(postm4$theta) #model theta
+
+
+a4.ter<-mean(logistic(postm4$a+postm4$b*0))
+a4.ter.low<-quantile(logistic(postm4$a),0.025)
+a4.ter.high<-quantile(logistic(postm4$a),0.975)
+
+alpha4.ter<-a4.ter*theta4
+beta4.ter<-(1-a4.aq)*theta4
+
+alpha4.aq<-a4.aq*theta4 #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta4.aq<-(1-a4.aq)*theta4 #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+list(c(1-pbeta(0.001,alpha4.aq,beta4.aq), #estimate of incidence (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a4.aq.low*theta4,(1-a4.aq.low)*theta4),
+       1-pbeta(0.001,a4.aq.high*theta4,(1-a4.aq.high)*theta4)))
+
+list(c(1-pbeta(0.001,alpha4.ter,beta4.ter),
+       1-pbeta(0.001,a4.ter.low*theta4,(1-a4.ter.low)*theta4),
+       1-pbeta(0.001,a4.ter.high*theta4,(1-a4.ter.high)*theta4)))
+
+
+######################################################################
+########aquatic-terrestrial model with only max samples, but no mosquitoes###############
+######create dataset with only the max #samples for each species######
+######################################################################
+
+d2_nom<-as.data.table(d2_nom)
+d2_nom.max<-d2_nom[d2_nom[, .I[which.max(Total)], by=spp]$V1]
+d2_nom.max<-as.data.frame(d2_nom.max)
+d2_nom.max<-d2_nom.max[d2_nom.max$Class=="Insecta",]
+d2_nom.max$ATcode<-ifelse(d2_nom.max$AT=="aquatic",1,0)
+d2_nommaxcull<-d2_nom.max[,c("Total","Infected","ATcode","Order")]
+d2_nommax.trim<-d2_nommaxcull[complete.cases(d2_nommaxcull$Total),]
+
+m4.1<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a+b*ATcode,
+    a~dnorm(0,3),
+    b~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d2_nommax.trim,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m4.1)
+
+precis(m4.1,prob=.95)
+postm4.1<-extract.samples(m4.1)
+a4.1.aq<-mean(logistic(postm4.1$a+postm4.1$b)) #model intercept for aquatic
+a4.1.aq.low<-quantile(logistic(postm4.1$a+postm4.1$b),0.025) #model intercept for aquatic
+a4.1.aq.high<-quantile(logistic(postm4.1$a+postm4.1$b),0.975) #model intercept for aquatic
+theta4.1<-mean(postm4.1$theta) #model theta
+
+
+a4.1.ter<-mean(logistic(postm4.1$a+postm4.1$b*0))
+a4.1.ter.low<-quantile(logistic(postm4.1$a),0.025)
+a4.1.ter.high<-quantile(logistic(postm4.1$a),0.975)
+
+alpha4.1.ter<-a4.1.ter*theta4.1
+beta4.1.ter<-(1-a4.1.aq)*theta4.1
+
+alpha4.1.aq<-a4.1.aq*theta4.1 #shape parameter one, alpha, estimated from model. Enter this into beta distribution.
+beta4.1.aq<-(1-a4.1.aq)*theta4.1 #shape parameter two, beta, estimated from model. Enter this into beta distribution.
+
+list(c(1-pbeta(0.001,alpha4.1.aq,beta4.1.aq), #estimate of incidence (proportion of species with Wolbachia) assuming that only populations with 1/1000 individuals infected have are truly infected species.
+       1-pbeta(0.001,a4.1.aq.low*theta4.1,(1-a4.1.aq.low)*theta4.1),
+       1-pbeta(0.001,a4.1.aq.high*theta4.1,(1-a4.1.aq.high)*theta4.1)))
+
+list(c(1-pbeta(0.001,alpha4.1.ter,beta4.1.ter),
+       1-pbeta(0.001,a4.1.ter.low*theta4.1,(1-a4.1.ter.low)*theta4.1),
+       1-pbeta(0.001,a4.1.ter.high*theta4.1,(1-a4.1.ter.high)*theta4.1)))
+
+
+
+
+
+#################################
+####Diptera###
+#################################
+d3dip<-d3.trim[d3.trim$Order=="Diptera",]
+
+m5.dip<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3dip,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.dip)
+precis(m5.dip,prob=.95,depth=2)
+postdip<-extract.samples(m5.dip)
+p_dip<-mean(logistic(postdip$a))
+plow_dip<-quantile(logistic(postdip$a),prob=0.025)
+phigh_dip<-quantile(logistic(postdip$a),prob=0.975)
+t_dip<-mean(postdip$theta)
+list(c(1-pbeta(0.001,p_dip*t_dip,(1-p_dip)*t_dip),
+       1-pbeta(0.001,plow_dip*t_dip,(1-plow_dip)*t_dip),
+       1-pbeta(0.001,phigh_dip*t_dip,(1-phigh_dip)*t_dip)))
+
+quantile(logistic(postdip$a))
+
+
+#######################
+####Diptera - no mosquitoes###
+##############################
+d3cull<-d2[,c("Order","Total","Infected","ATcode","Family")]
+d3cull<-d3cull[d3cull$AT=="1",]
+d3cull$Ordercode<-coerce_index(d3cull$Order)
+d3.trim<-d3cull[complete.cases(d3cull$Total),]
+d3.trim<-as.data.frame(d3.trim)
+d3dip_nom<-d3.trim[d3.trim$Family!="Culicidae",]
+d3dip_nom<-d3dip_nom[d3dip_nom$Order=="Diptera",]
+
+m5.dipnm<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3dip_nom,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.dipnm)
+precis(m5.dipnm,prob=.95,depth=2) #model results
+postdipnm<-extract.samples(m5.dipnm)
+p_dipnm<-mean(logistic(postdipnm$a))
+plow_dipnm<-quantile(logistic(postdipnm$a),prob=0.025)
+phigh_dipnm<-quantile(logistic(postdipnm$a),prob=0.975)
+t_dipnm<-mean(postdipnm$theta)
+list(c(1-pbeta(0.001,p_dipnm*t_dipnm,(1-p_dipnm)*t_dipnm),
+       1-pbeta(0.001,plow_dipnm*t_dipnm,(1-plow_dipnm)*t_dipnm),
+       1-pbeta(0.001,phigh_dipnm*t_dipnm,(1-phigh_dipnm)*t_dipnm)))
+
+
+#################################
+####Coleoptera###
+#################################
+d3col<-d3.trim[d3.trim$Order=="Coleoptera",]
+
+m5.col<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3col,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.col)
+precis(m5.col,prob=.95,depth=2)
+postcol<-extract.samples(m5.col)
+p_col<-mean(logistic(postcol$a))
+plow_col<-quantile(logistic(postcol$a),prob=0.025)
+phigh_col<-quantile(logistic(postcol$a),prob=0.975)
+t_col<-mean(postcol$theta)
+list(c(1-pbeta(0.001,p_col*t_col,(1-p_col)*t_col),
+       1-pbeta(0.001,plow_col*t_col,(1-plow_col)*t_col),
+       1-pbeta(0.001,phigh_col*t_col,(1-phigh_col)*t_col)))
+       
+       
+
+
+
+
+
+#################################
+####Hemiptera###
+#################################
+d3hem<-d3.trim[d3.trim$Order=="Hemiptera",]
+
+m5.hem<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3hem,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.hem)
+precis(m5.hem,prob=.95,depth=2)
+posthem<-extract.samples(m5.hem)
+p_hem<-mean(logistic(posthem$a))
+plow_hem<-quantile(logistic(posthem$a),prob=0.025)
+phigh_hem<-quantile(logistic(posthem$a),prob=0.975)
+t_hem<-mean(posthem$theta)
+list(c(1-pbeta(0.001,p_hem*t_hem,(1-p_hem)*t_hem),
+       1-pbeta(0.001,plow_hem*t_hem,(1-plow_hem)*t_hem),
+       1-pbeta(0.001,phigh_hem*t_hem,(1-phigh_hem)*t_hem)))
+
+
+
+#################################
+####Plecoptera###
+#################################
+d3ple<-d3.trim[d3.trim$Order=="Plecoptera",]
+
+m5.ple<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3ple,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.ple)
+precis(m5.ple,prob=.95,depth=2)
+postple<-extract.samples(m5.ple)
+p_ple<-mean(logistic(postple$a))
+plow_ple<-quantile(logistic(postple$a),prob=0.025)
+phigh_ple<-quantile(logistic(postple$a),prob=0.975)
+t_ple<-mean(postple$theta)
+list(c(1-pbeta(0.001,p_ple*t_ple,(1-p_ple)*t_ple),
+       1-pbeta(0.001,plow_ple*t_ple,(1-plow_ple)*t_ple),
+       1-pbeta(0.001,phigh_ple*t_ple,(1-phigh_ple)*t_ple)))
+
+
+#################################
+####Trichoptera###
+#################################
+d3tri<-d3.trim[d3.trim$Order=="Trichoptera",]
+
+m5.tri<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3tri,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.tri)
+precis(m5.tri,prob=.95,depth=2)
+posttri<-extract.samples(m5.tri)
+p_tri<-mean(logistic(posttri$a))
+plow_tri<-quantile(logistic(posttri$a),prob=0.025)
+phigh_tri<-quantile(logistic(posttri$a),prob=0.975)
+t_tri<-mean(posttri$theta)
+list(c(1-pbeta(0.001,p_tri*t_tri,(1-p_tri)*t_tri),
+       1-pbeta(0.001,plow_tri*t_tri,(1-plow_tri)*t_tri),
+       1-pbeta(0.001,phigh_tri*t_tri,(1-phigh_tri)*t_tri)))
+
+
+
+
+
+#################################
+####Odonata###
+#################################
+d3odo<-d3.trim[d3.trim$Order=="Odonata",]
+
+m5.odo<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3odo,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.odo)
+precis(m5.odo,prob=.95,depth=2)
+postodo<-extract.samples(m5.odo)
+p_odo<-mean(logistic(postodo$a))
+plow_odo<-quantile(logistic(postodo$a),prob=0.025)
+phigh_odo<-quantile(logistic(postodo$a),prob=0.975)
+t_odo<-mean(postodo$theta)
+list(c(1-pbeta(0.001,p_odo*t_odo,(1-p_odo)*t_odo),
+       1-pbeta(0.001,plow_odo*t_odo,(1-plow_odo)*t_odo),
+       1-pbeta(0.001,phigh_odo*t_odo,(1-phigh_odo)*t_odo)))
+
+
+
+
+
+
+#################################
+####Ephemeroptera###
+#################################
+d3eph<-d3.trim[d3.trim$Order=="Ephemeroptera",]
+
+m5.eph<-map2stan(
+  alist(
+    Infected~dbetabinom(Total,pbar,theta),
+    logit(pbar)<-a,
+    a~dnorm(0,3),
+    theta~dexp(1)
+  ),
+  data=d3eph,
+  constraints=list(theta="lower=0"),
+  start=list(theta=3),
+  warmup=2000,iter=4000,chains=4)
+
+plot(m5.eph)
+precis(m5.eph,prob=.95,depth=2)
+posteph<-extract.samples(m5.eph)
+p_eph<-mean(logistic(posteph$a))
+plow_eph<-quantile(logistic(posteph$a),prob=0.025)
+phigh_eph<-quantile(logistic(posteph$a),prob=0.975)
+t_eph<-mean(posteph$theta)
+list(c(1-pbeta(0.001,p_eph*t_eph,(1-p_eph)*t_eph),
+       1-pbeta(0.001,plow_eph*t_eph,(1-plow_eph)*t_eph),
+       1-pbeta(0.001,phigh_eph*t_eph,(1-phigh_eph)*t_eph)))
